@@ -13,12 +13,12 @@ on:
       github_release:
         description: 'Upload to Github release'
         required: false
-        default: false
+        default: true
         type: boolean
       mpv_tarball:
         description: 'Build latest mpv tarball'
         required: false
-        default: false
+        default: true
         type: boolean
 
 jobs:
@@ -143,9 +143,10 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: mpv-${{ matrix.bit }}
-          path: release_${{ matrix.bit }}/mpv-${{ env.arch }}*
+          path: release_${{ matrix.bit }}/mpv-*${{ env.arch }}*
 
       - name: Uploading ${{ matrix.bit }} debug
+        if: ${{ inputs.mpv_tarball == false }}
         uses: actions/upload-artifact@master
         with:
           name: mpv-${{ matrix.bit }}-debug
@@ -162,13 +163,13 @@ jobs:
         run: |
           ninja -C build_$BIT cargo-clean
 
-      - name: Saving clang sysroot cache
-        uses: actions/cache/save@main
-        if: ${{ always() && matrix.bit == 'x86_64' }}
-        with:
-          path: |
-            clang_root
-          key: ${{ secrets.CACHE_VERSION }}-clang_root-${{ github.run_id }}
+      # - name: Saving clang sysroot cache
+      #   uses: actions/cache/save@main
+      #   if: ${{ always() && matrix.bit == 'x86_64' }}
+      #   with:
+      #     path: |
+      #       clang_root
+      #     key: ${{ secrets.CACHE_VERSION }}-clang_root-${{ github.run_id }}
 
       - name: Saving repository cache
         uses: actions/cache/save@main
@@ -177,13 +178,13 @@ jobs:
           path: src_packages
           key: ${{ secrets.CACHE_VERSION }}-repository-${{ github.run_id }}
 
-      - name: Saving ${{ matrix.bit }} toolchain cache
-        uses: actions/cache/save@main
-        if: always()
-        with:
-          path: |
-            build_${{ matrix.bit }}
-          key: ${{ secrets.CACHE_VERSION }}-clang-${{ matrix.bit }}_toolchain-${{ github.run_id }}
+      # - name: Saving ${{ matrix.bit }} toolchain cache
+      #   uses: actions/cache/save@main
+      #   if: always()
+      #   with:
+      #     path: |
+      #       build_${{ matrix.bit }}
+      #     key: ${{ secrets.CACHE_VERSION }}-clang-${{ matrix.bit }}_toolchain-${{ github.run_id }}
 
       - name: Saving release_${{ matrix.bit }} cache
         uses: actions/cache/save@main
@@ -211,10 +212,6 @@ jobs:
           git config --global pull.rebase true
           git config --global fetch.prune true
           git config --global --add safe.directory $PWD
-
-      - uses: actions/checkout@main
-        with:
-          ref: master
 
       - name: Loading release_i686 cache
         uses: actions/cache/restore@main
@@ -248,11 +245,12 @@ jobs:
           echo "short_date=$(date "+%Y%m%d")" >> $GITHUB_ENV
 
       - name: Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: ${{ github.event.inputs.github_release == 'true' }}
         continue-on-error: true
         with:
-          prerelease: true
+          prerelease: false
+          target_commitish: ${{ github.sha }}
           tag_name: ${{ needs.build_mpv.outputs.mpv_ver }}-${{ env.short_date }}
           fail_on_unmatched_files: true
           files: release/*
