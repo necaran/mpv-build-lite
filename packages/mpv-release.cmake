@@ -2,8 +2,8 @@
 set(PREFIX_DIR ${CMAKE_CURRENT_BINARY_DIR}/mpv-release-prefix)
 file(WRITE ${PREFIX_DIR}/get_latest_tag.sh
 "#!/bin/bash
-tag=$(curl -sI https://github.com/mpv-player/mpv/releases/latest | grep 'location: https://github.com/mpv-player/mpv/releases' | sed 's#.*/##g' | tr -d '\r')
-printf 'https://github.com/mpv-player/mpv/archive/%s.tar.gz' $tag")
+tag=$(curl -sI https://github.com/necaran/mpv/releases/latest | grep 'location: https://github.com/necaran/mpv/releases' | sed 's#.*/##g' | tr -d '\r')
+printf 'https://github.com/necaran/mpv/archive/%s.tar.gz' $tag")
 
 # Workaround since cmake dont allow you to change file permission easily
 file(COPY ${PREFIX_DIR}/get_latest_tag.sh
@@ -54,7 +54,6 @@ ExternalProject_Add(mpv-release
         -Dpdf-build=enabled
         -Dlua=enabled
         -Djavascript=enabled
-        -Dsdl2-gamepad=enabled
         -Dlibarchive=enabled
         -Dlibbluray=enabled
         -Ddvdnav=enabled

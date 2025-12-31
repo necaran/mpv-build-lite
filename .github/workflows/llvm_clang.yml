@@ -10,6 +10,16 @@ on:
         description: 'Run custom command before building'
         required: false
         type: string
+      github_release:
+        description: 'Upload to Github release'
+        required: false
+        default: true
+        type: boolean
+      mpv_tarball:
+        description: 'Build latest mpv tarball'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build_llvm:
@@ -176,3 +186,15 @@ jobs:
         with:
           path: src_packages
           key: ${{ secrets.CACHE_VERSION }}-repository-${{ github.run_id }}
+
+  call_workflow:
+    name: Run mpv_clang
+    runs-on: ubuntu-latest
+    needs: build_llvm
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Run mpv_clang.yml
+        run: |
+          gh workflow run 'mpv clang' -f github_release=${{inputs.github_release}} -f mpv_tarball=${{inputs.mpv_tarball}} -r ${{github.ref_name}}
