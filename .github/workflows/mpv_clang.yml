@@ -13,12 +13,12 @@ on:
       github_release:
         description: 'Upload to Github release'
         required: false
-        default: false
+        default: true
         type: boolean
       mpv_tarball:
         description: 'Build latest mpv tarball'
         required: false
-        default: false
+        default: true
         type: boolean
 
 jobs:
@@ -128,8 +128,8 @@ jobs:
         run: |
           mkdir -p build_${BIT}_logs
           cp -fr $(find build_$BIT -type f -iname "*-*.log" -or -wholename "*/ffbuild/config.log") build_${BIT}_logs || true
-          7z a -m0=lzma2 -mx=9 -ms=on logs.7z build*logs
-          7z a -m0=lzma2 -mx=9 -ms=on -r logs2.7z *.log *.cmake *.ninja *.txt configure *.m4 *.sh
+          7z a -m0=lzma2 -mx=9 -ms=on logs.7z build*logs || true
+          7z a -m0=lzma2 -mx=9 -ms=on -r logs2.7z *.log *.cmake *.ninja *.txt configure *.m4 *.sh || true
 
       - name: Uploading logs
         uses: actions/upload-artifact@master
@@ -142,13 +142,16 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: mpv-${{ matrix.bit }}
-          path: release_${{ matrix.bit }}/mpv-${{ env.arch }}*
+          path: |
+            release_${{ matrix.bit }}/mpv-*${{ env.arch }}*
+            !release_${{ matrix.bit }}/mpv-debug-*
+            !release_${{ matrix.bit }}/mpv-dev-
 
       - name: Uploading ${{ matrix.bit }} debug
         uses: actions/upload-artifact@master
         with:
           name: mpv-${{ matrix.bit }}-debug
-          path: release_${{ matrix.bit }}/mpv-debug-${{ env.arch }}*
+          path: release_${{ matrix.bit }}/mpv-debug-*${{ env.arch }}*
 
       - name: Cleaning build directory
         if: always()
@@ -156,13 +159,13 @@ jobs:
           rm -rf build_$BIT/mpv*
           rm -rf release_$BIT/mpv-debug*.7z
 
-      - name: Saving clang sysroot cache
-        uses: actions/cache/save@main
-        if: ${{ always() && matrix.bit == 'x86_64' }}
-        with:
-          path: |
-            clang_root
-          key: ${{ secrets.CACHE_VERSION }}-clang_root-${{ github.run_id }}
+      # - name: Saving clang sysroot cache
+      #   uses: actions/cache/save@main
+      #   if: ${{ always() && matrix.bit == 'x86_64' }}
+      #   with:
+      #     path: |
+      #       clang_root
+      #     key: ${{ secrets.CACHE_VERSION }}-clang_root-${{ github.run_id }}
 
       - name: Saving repository cache
         uses: actions/cache/save@main
@@ -171,13 +174,13 @@ jobs:
           path: src_packages
           key: ${{ secrets.CACHE_VERSION }}-repository-${{ github.run_id }}
 
-      - name: Saving ${{ matrix.bit }} toolchain cache
-        uses: actions/cache/save@main
-        if: always()
-        with:
-          path: |
-            build_${{ matrix.bit }}
-          key: ${{ secrets.CACHE_VERSION }}-clang-${{ matrix.bit }}_toolchain-${{ github.run_id }}
+      # - name: Saving ${{ matrix.bit }} toolchain cache
+      #   uses: actions/cache/save@main
+      #   if: always()
+      #   with:
+      #     path: |
+      #       build_${{ matrix.bit }}
+      #     key: ${{ secrets.CACHE_VERSION }}-clang-${{ matrix.bit }}_toolchain-${{ github.run_id }}
 
       - name: Saving release_${{ matrix.bit }} cache
         uses: actions/cache/save@main
@@ -246,7 +249,7 @@ jobs:
         if: ${{ github.event.inputs.github_release == 'true' }}
         continue-on-error: true
         with:
-          prerelease: true
+          draft: true
           tag_name: ${{ needs.build_mpv.outputs.mpv_ver }}-${{ env.short_date }}
           fail_on_unmatched_files: true
           files: release/*
